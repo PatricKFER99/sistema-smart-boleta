@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SmartBoleta</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #1a2a3a, #2c3e50); height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-container { background: white; border-radius: 15px; width: 100%; max-width: 400px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .login-header { background: #e74c3c; color: white; padding: 2rem; text-align: center; }
+        .logo { font-size: 3rem; margin-bottom: 10px; }
+        .login-form { padding: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #ecf0f1; border-radius: 8px; font-size: 16px; outline: none; }
+        .form-group input:focus { border-color: #3498db; }
+        .btn-login { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-login:hover { background: #219150; }
+        
+        /* Estilo para botón manual de contingencia */
+        .manual-link { display: block; text-align: center; margin-top: 20px; padding: 15px; background: #3498db; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="loginCard">
+        <div class="login-header">
+            <div class="logo">💎</div>
+            <h1>SmartBoleta</h1>
+            <p>Sistema de Planillas Minera</p>
+        </div>
+        <form class="login-form" onsubmit="login(event)">
+            <div class="form-group">
+                <label>Usuario o DNI</label>
+                <input type="text" id="dni" placeholder="Ingresa tu usuario" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+            </div>
+            <button type="submit" class="btn-login" id="btnIngresar">INGRESAR</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function login(e) {
+            e.preventDefault();
+            const dni = document.getElementById('dni').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btnIngresar');
+            
+            btn.disabled = true;
+            btn.textContent = "Verificando...";
+
+            try {
+                // 1. Buscar en TRABAJADORES
+                let { data: trabajador } = await supabase.from('trabajadores').select('*').eq('dni', dni).eq('password', password).single();
+                
+                if (trabajador) {
+                    accesoExitoso(trabajador, false);
+                    return;
+                }
+
+                // 2. Buscar en ADMINISTRADORES (o trabajadores con rol admin)
+                // Nota: En tu sistema unificamos todo en 'trabajadores' con un campo 'es_admin', 
+                // pero por si acaso dejaste la tabla 'administradores', buscamos ahí también.
+                let { data: admin } = await supabase.from('administradores').select('*').eq('dni', dni).eq('password', password).single();
+
+                if (admin) {
+                    accesoExitoso(admin, true);
+                    return;
+                }
+
+                // Si llegamos aquí, falló
+                Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
+                btn.disabled = false;
+                btn.textContent = "INGRESAR";
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error', 'Error de conexión o datos', 'error');
+                btn.disabled = false;
+                btn.textContent = "INGRESAR";
+            }
+        }
+
+        function accesoExitoso(usuario, esAdminTabla) {
+            // Guardar sesión
+            // Si viene de tabla administradores o tiene el flag es_admin
+            if(esAdminTabla) usuario.es_admin = true; 
+            
+            localStorage.setItem('usuarioLogueado', JSON.stringify(usuario));
+            
+            const destino = (usuario.es_admin) ? 'admin-panel.html' : 'dashboard.html';
+
+            // INTENTO DE REDIRECCIÓN SUAVE
+            try {
+                // Opción 1: Redirección automática
+                window.location.href = destino;
+            } catch (err) {
+                // Opción 2: Si falla (tu error actual), mostramos botón manual
+                mostrarBotonManual(destino);
+            }
+        }
+
+        function mostrarBotonManual(urlDestino) {
+            const card = document.getElementById('loginCard');
+            card.innerHTML = `
+                <div style="padding: 3rem; text-align: center;">
+                    <h2 style="color: #27ae60; margin-bottom: 1rem;">✅ ¡Bienvenido!</h2>
+                    <p style="color: #7f8c8d;">Tus credenciales son correctas.</p>
+                    <a href="${urlDestino}" class="manual-link">
+                        CONTINUAR AL SISTEMA 👉
+                    </a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

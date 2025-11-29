@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #ecf0f1; display: flex; min-height: 100vh; margin:0; }
+        .sidebar { width: 250px; background: #2c3e50; padding: 20px 0; flex-shrink: 0; display: flex; flex-direction: column;}
+        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; }
+        .nav-link { display: block; color: white; padding: 15px 25px; text-decoration: none; transition:0.3s; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); border-left: 4px solid #e74c3c; }
+        .main { flex: 1; padding: 30px; }
+        
+        .welcome-banner { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+        
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .number { font-size: 2.5rem; font-weight: bold; color: #2c3e50; margin: 10px 0; }
+        .label { color: #7f8c8d; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <!-- CONTENIDO (Se oculta si no hay sesión) -->
+    <div id="appContent" style="display:flex; width:100%;">
+        <nav class="sidebar">
+            <div class="sidebar-header">💎 SMART BOLETA</div>
+            <a href="dashboard.html" class="nav-link active">🏠 Inicio</a>
+            <a href="boletas.html" class="nav-link">📄 Mis Boletas</a>
+            <a href="perfil.html" class="nav-link">👤 Mi Perfil</a>
+            <a href="javascript:void(0)" onclick="cerrarSesion()" class="nav-link" style="margin-top:auto; color:#e74c3c">🚪 Salir</a>
+        </nav>
+
+        <main class="main">
+            <div class="welcome-banner">
+                <h1 id="welcome">Hola...</h1>
+                <p>Bienvenido al portal de documentos.</p>
+            </div>
+            
+            <div class="card-grid">
+                <div class="card">
+                    <div style="font-size: 2rem;">📂</div>
+                    <div class="number" id="totalBoletas">0</div>
+                    <div class="label">Boletas Disponibles</div>
+                </div>
+                <div class="card">
+                    <div style="font-size: 2rem;">📅</div>
+                    <div class="number" id="ultimoMes">-</div>
+                    <div class="label">Último Periodo</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // LÓGICA SEGURA (Sin redirección automática)
+        let user = null;
+        try {
+            user = JSON.parse(localStorage.getItem('usuarioLogueado'));
+        } catch (e) { user = null; }
+
+        if(!user) {
+            // Si no hay usuario, en vez de redirigir (que da error), mostramos pantalla de bloqueo
+            document.body.innerHTML = `
+                <div style="display:flex;justify-content:center;align-items:center;height:100vh;width:100%;flex-direction:column;font-family:sans-serif;background:#ecf0f1">
+                    <h2 style="color:#2c3e50">🔒 Sesión Requerida</h2>
+                    <p style="color:#7f8c8d; margin-bottom:20px">No se ha detectado un usuario activo.</p>
+                    <a href="index.html" style="padding:12px 24px;background:#3498db;color:white;text-decoration:none;border-radius:5px;font-weight:bold">Ir al Login</a>
+                </div>`;
+        } else {
+            // Si hay usuario, cargamos normal
+            iniciarDashboard();
+        }
+
+        function iniciarDashboard() {
+            document.getElementById('welcome').textContent = `Hola, ${user.nombre.split(' ')[0]}!`;
+            load();
+        }
+
+        async function load() {
+            const { data } = await supabase.from('boletas')
+                .select('mes, año, fecha_subida')
+                .eq('dni', user.dni)
+                .order('fecha_subida', {ascending: true}); // Orden ascendente
+
+            if(data) {
+                document.getElementById('totalBoletas').textContent = data.length;
+                if(data.length > 0) {
+                    // El último de la lista es el más reciente
+                    const last = data[data.length - 1];
+                    document.getElementById('ultimoMes').textContent = `${last.mes} ${last.año}`;
+                }
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            // Forzamos recarga para que caiga en la pantalla de bloqueo segura
+            location.reload();
+        }
+    </script>
+</body>
+</html>

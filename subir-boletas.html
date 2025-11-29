@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Boletas - Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #ecf0f1; display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: #2c3e50; color: white; padding: 20px 0; flex-shrink: 0; display: flex; flex-direction: column; }
+        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 15px 25px; color: white; text-decoration: none; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); border-left: 4px solid #e67e22; }
+        .btn-logout { margin-top: auto; padding: 15px 25px; color: #e74c3c; text-decoration: none; font-weight: bold; cursor: pointer; }
+        
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        
+        .upload-container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; }
+        
+        .file-drop-zone { border: 2px dashed #3498db; padding: 40px; text-align: center; border-radius: 10px; cursor: pointer; transition: 0.3s; background: #f8f9fa; }
+        .file-drop-zone:hover { background: #eef6fc; border-color: #2980b9; }
+        
+        .file-list { margin-top: 20px; }
+        .file-card { background: white; border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        
+        .file-info { flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
+        
+        .status { font-weight: bold; font-size: 0.9rem; }
+        .btn-upload { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+        .btn-upload:hover { background: #219150; }
+        .btn-upload:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+        h2 { color: #2c3e50; margin-bottom: 10px; }
+        p { color: #7f8c8d; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">ADMIN PANEL</div>
+        <a href="admin-panel.html" class="nav-link">👥 Trabajadores</a>
+        <a href="subir-boletas.html" class="nav-link active">📤 Subir Boletas</a>
+        <a href="admin-perfil.html" class="nav-link">👤 Mi Perfil Admin</a>
+        <a href="javascript:void(0)" class="btn-logout" onclick="cerrarSesion()">🚪 Salir</a>
+    </nav>
+
+    <main class="main">
+        <div class="upload-container">
+            <h2>📤 Carga Inteligente de Boletas</h2>
+            <p>Arrastra los PDFs. El sistema detectará <b>Mes</b> y <b>Año</b> del nombre del archivo.</p>
+            
+            <div class="file-drop-zone" id="dropZone">
+                <span style="font-size: 3rem;">📂</span>
+                <h3>Arrastra los archivos PDF aquí</h3>
+                <input type="file" id="fileInput" multiple accept=".pdf" hidden>
+            </div>
+
+            <div class="file-list" id="fileList"></div>
+            
+            <button id="btnProcess" class="btn-upload" style="display: none;" onclick="subirTodo()">
+                🚀 Subir Boletas
+            </button>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let archivosParaSubir = [];
+        let trabajadores = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // --- 1. SEGURIDAD ADMIN (Obligatorio) ---
+            let admin = null;
+            try { admin = JSON.parse(localStorage.getItem('usuarioLogueado')); } catch(e) {}
+
+            if (!admin || !admin.es_admin) {
+                document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;width:100%;flex-direction:column;font-family:sans-serif"><h2>🔒 Acceso Restringido</h2><a href="index.html" style="margin-top:20px;padding:10px 20px;background:#2c3e50;color:white;text-decoration:none;border-radius:5px">Ir al Login</a></div>`;
+                return;
+            }
+
+            // --- 2. CARGA DE TRABAJADORES ---
+            const { data } = await supabase.from('trabajadores').select('id, nombre, dni').eq('es_admin', false);
+            trabajadores = data || [];
+        });
+
+        // --- LÓGICA DE ARRASTRAR Y SOLTAR ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => procesarSeleccion(e.target.files);
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.background = '#eef6fc'; });
+        dropZone.addEventListener('dragleave', () => { dropZone.style.background = '#f8f9fa'; });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f8f9fa';
+            procesarSeleccion(e.dataTransfer.files);
+        });
+
+        function procesarSeleccion(files) {
+            const lista = document.getElementById('fileList');
+            
+            Array.from(files).forEach((file, index) => {
+                if(file.type !== 'application/pdf') return;
+
+                const nombreUpper = file.name.toUpperCase();
+                
+                // Detectar datos
+                const meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+                let mesDetectado = meses.find(m => nombreUpper.includes(m));
+                if (!mesDetectado) mesDetectado = meses[new Date().getMonth()]; // Fallback
+                if(mesDetectado === 'SETIEMBRE') mesDetectado = 'SEPTIEMBRE'; 
+
+                const anioMatch = nombreUpper.match(/20\d{2}/);
+                const anioDetectado = anioMatch ? anioMatch[0] : new Date().getFullYear();
+
+                let trabajadorId = "";
+                const trabajadorEncontrado = trabajadores.find(t => nombreUpper.includes(t.nombre.toUpperCase()) || nombreUpper.includes(t.dni));
+                if(trabajadorEncontrado) trabajadorId = trabajadorEncontrado.id;
+
+                const idUnico = Date.now() + index;
+                archivosParaSubir.push({ id: idUnico, file, trabajadorId, mes: mesDetectado, anio: anioDetectado });
+
+                // Renderizar
+                const item = document.createElement('div');
+                item.className = 'file-card';
+                item.id = `card-${idUnico}`;
+                item.innerHTML = `
+                    <div style="font-size:2rem; color:#e74c3c">📄</div>
+                    <div style="flex:1">
+                        <div style="font-weight:bold; margin-bottom:5px">${file.name}</div>
+                        <div class="file-info">
+                            <select id="trab-${idUnico}">
+                                <option value="">-- Seleccionar Trabajador --</option>
+                                ${trabajadores.map(t => `<option value="${t.id}" ${t.id === trabajadorId ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+                            </select>
+                            <select id="mes-${idUnico}">
+                                ${meses.map(m => `<option value="${m}" ${m === mesDetectado ? 'selected' : ''}>${m}</option>`).join('')}
+                            </select>
+                            <select id="anio-${idUnico}">
+                                <option value="2024" ${anioDetectado == 2024 ? 'selected' : ''}>2024</option>
+                                <option value="2025" ${anioDetectado == 2025 ? 'selected' : ''}>2025</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="status" id="status-${idUnico}" style="color:#f39c12">Pendiente</div>
+                `;
+                lista.appendChild(item);
+            });
+
+            if(archivosParaSubir.length > 0) document.getElementById('btnProcess').style.display = 'block';
+        }
+
+        async function subirTodo() {
+            const btn = document.getElementById('btnProcess');
+            btn.disabled = true; btn.textContent = '⏳ Procesando...';
+
+            for (const item of archivosParaSubir) {
+                const status = document.getElementById(`status-${item.id}`);
+                const tId = document.getElementById(`trab-${item.id}`).value;
+                const mes = document.getElementById(`mes-${item.id}`).value;
+                const anio = document.getElementById(`anio-${item.id}`).value;
+
+                if(!tId) { status.textContent = '⚠️ Falta Trabajador'; status.style.color = 'red'; continue; }
+
+                try {
+                    status.textContent = 'Subiendo...';
+                    const trab = trabajadores.find(t => t.id == tId);
+                    const ruta = `boletas/${anio}/${mes}/${trab.dni}_${Date.now()}.pdf`;
+
+                    const { error: upError } = await supabase.storage.from('boletas2').upload(ruta, item.file);
+                    if (upError) throw upError;
+
+                    const { data: urlData } = supabase.storage.from('boletas2').getPublicUrl(ruta);
+
+                    const { error: dbError } = await supabase.from('boletas').insert([{
+                        trabajador_id: tId, dni: trab.dni, nombre_trabajador: trab.nombre,
+                        mes: mes, año: anio, nombre_archivo: item.file.name,
+                        url_archivo: urlData.publicUrl, fecha_subida: new Date().toISOString()
+                    }]);
+
+                    if (dbError) throw dbError;
+                    status.textContent = '✅ Listo'; status.style.color = 'green';
+
+                } catch (err) {
+                    console.error(err);
+                    status.textContent = '❌ Error'; status.style.color = 'red';
+                }
+            }
+            btn.textContent = '✅ Proceso Finalizado';
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            location.reload();
+        }
+    </script>
+</body>
+</html>

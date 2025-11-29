@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gestión de Personal</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ESTILOS MODERNOS (Grid & Cards) */
+        :root { 
+            --sidebar-bg: #2c3e50; 
+            --orange: #e67e22; 
+            --blue: #3498db; 
+            --red: #e74c3c; 
+            --green: #27ae60;
+            --bg-gray: #ecf0f1;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg-gray); display: flex; min-height: 100vh; }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 20px 0; display: flex; flex-direction: column; position: fixed; height: 100%; z-index: 100; }
+        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        
+        .nav-links { list-style: none; margin-top: 10px; }
+        .nav-link a { display: flex; align-items: center; gap: 10px; padding: 15px 25px; color: #bdc3c7; text-decoration: none; transition: 0.3s; border-left: 4px solid transparent; }
+        .nav-link a:hover, .nav-link a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--orange); }
+        .nav-link i { width: 25px; text-align: center; }
+
+        .sidebar-footer { margin-top: auto; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .btn-logout { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: bold; padding: 10px; border-radius: 5px; transition: 0.3s; cursor: pointer; }
+        .btn-logout:hover { background: rgba(231, 76, 60, 0.1); }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main { margin-left: 260px; flex: 1; padding: 30px; }
+        
+        .header-section { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header-section h2 { color: var(--sidebar-bg); margin: 0; font-size: 1.5rem; }
+        .header-section p { color: #7f8c8d; font-size: 0.9rem; margin-top: 5px; }
+
+        .btn-add { background: var(--green); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3); }
+
+        /* --- TARJETAS --- */
+        .worker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .worker-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--blue); transition: transform 0.2s; display: flex; flex-direction: column; }
+        .worker-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        
+        .card-body { padding: 20px; flex: 1; }
+        .worker-name { font-size: 1.1rem; font-weight: bold; color: var(--sidebar-bg); text-transform: uppercase; margin-bottom: 8px; }
+        .worker-dni { background: #f0f2f5; color: #666; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-bottom: 15px; }
+        
+        .worker-info-row { display: flex; align-items: center; gap: 8px; color: #555; font-size: 0.9rem; margin-bottom: 5px; }
+        .worker-info-row i { color: var(--blue); width: 20px; text-align: center; }
+
+        .card-actions { background: #f8f9fa; padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        
+        .btn-action { flex: 1; border: none; border-radius: 6px; padding: 10px; cursor: pointer; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.9rem; transition: 0.2s; }
+        
+        .btn-docs { background: var(--blue); flex: 2; } /* Botón Grande Azul */
+        .btn-docs:hover { background: #2980b9; }
+        
+        .btn-reset { background: var(--orange); } /* Botón Naranja */
+        .btn-reset:hover { background: #d35400; }
+        
+        .btn-del { background: var(--red); } /* Botón Rojo */
+        .btn-del:hover { background: #c0392b; }
+
+        /* --- MODAL --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal.active { display: flex; opacity: 1; }
+        
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 450px; transform: translateY(-20px); transition: transform 0.3s; }
+        .modal.active .modal-content { transform: translateY(0); }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+        .form-group input:focus { border-color: var(--blue); }
+        
+        .btn-save { width: 100%; padding: 12px; background: var(--sidebar-bg); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-save:hover { background: #1a252f; }
+
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-shield-alt"></i> ADMIN PANEL
+        </div>
+        <ul class="nav-links">
+            <li class="nav-link"><a href="admin-panel.html" class="active"><i class="fas fa-users"></i> Trabajadores</a></li>
+            <li class="nav-link"><a href="subir-boletas.html"><i class="fas fa-file-upload"></i> Subir Boletas</a></li>
+            <li class="nav-link"><a href="admin-perfil.html"><i class="fas fa-user-cog"></i> Mi Perfil Admin</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="javascript:void(0)" class="btn-logout" onclick="cerrarSesion()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <div class="header-section">
+            <div>
+                <h2>Gestión de Personal</h2>
+                <p>Administra el acceso y documentos de los trabajadores</p>
+            </div>
+            <button class="btn-add" onclick="abrirModal()">
+                <i class="fas fa-plus"></i> Nuevo Trabajador
+            </button>
+        </div>
+
+        <div id="listaTrabajadores" class="worker-grid">
+            <div style="text-align:center; width:100%; grid-column:1/-1; padding:2rem;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color:#bdc3c7"></i>
+                <p style="margin-top:10px; color:#7f8c8d">Cargando personal...</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal" id="modalTrabajador">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="color: var(--sidebar-bg); margin:0;">👤 Nuevo Trabajador</h3>
+                <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            
+            <form onsubmit="guardarTrabajador(event)">
+                <div class="form-group">
+                    <label>DNI (Usuario)</label>
+                    <input type="text" id="dni" required maxlength="8" placeholder="Ej: 71290311" pattern="\d{8}" title="8 dígitos numéricos">
+                </div>
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="nombre" required placeholder="Ej: YEMIR ESTRADA CARBAJAL">
+                </div>
+                <div class="form-group">
+                    <label>Cargo</label>
+                    <input type="text" id="cargo" required placeholder="Ej: PERFORISTA">
+                </div>
+                
+                <div class="form-group">
+                    <label>Área</label>
+                    <select id="area" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="MINA">MINA</option>
+                        <option value="PLANTA">PLANTA</option>
+                        <option value="ADMINISTRACION">ADMINISTRACIÓN</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña Inicial</label>
+                    <input type="text" id="password" value="minera2025" readonly style="background:#f9f9f9; color:#7f8c8d;">
+                    <small style="color:#999">La contraseña por defecto es 'minera2025'</small>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="button" onclick="cerrarModal()" style="flex:1; background:#ecf0f1; color:#555; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">Cancelar</button>
+                    <button type="submit" class="btn-save" style="flex:1">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- AUTENTICACIÓN SEGURA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuarioLogueado'));
+                // Validar si existe y si tiene la propiedad es_admin (o si usas otra lógica para admins)
+                if(!usuario || usuario.es_admin !== true) { 
+                    throw new Error("No autorizado"); 
+                }
+                cargarTrabajadores();
+            } catch (e) {
+                console.warn("Redirigiendo...", e);
+                try { window.location.href = 'index.html'; } 
+                catch (err) { 
+                    document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column"><h2>🔒 Acceso Denegado</h2><a href="index.html" style="margin-top:10px;padding:10px 20px;background:#3498db;color:white;text-decoration:none;border-radius:5px">Ir al Login</a></div>`;
+                }
+            }
+        });
+
+        // --- CARGAR TRABAJADORES (GRID) ---
+        async function cargarTrabajadores() {
+            const grid = document.getElementById('listaTrabajadores');
+            try {
+                // Traemos todos los usuarios ordenados por nombre
+                const { data, error } = await supabase.from('trabajadores').select('*').order('nombre');
+                
+                if (error) throw error;
+                
+                grid.innerHTML = '';
+                // Filtramos para NO mostrar a los administradores en la lista
+                const trabajadores = data.filter(t => t.es_admin !== true);
+
+                if(trabajadores.length === 0) {
+                    grid.innerHTML = `
+                        <div style="grid-column:1/-1; text-align:center; padding:3rem; background:white; border-radius:10px; color:#7f8c8d;">
+                            <i class="fas fa-users-slash fa-3x" style="margin-bottom:15px; opacity:0.5;"></i>
+                            <h3>No hay trabajadores registrados</h3>
+                            <p>Usa el botón "Nuevo Trabajador" para agregar uno.</p>
+                        </div>`;
+                    return;
+                }
+
+                trabajadores.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = 'worker-card';
+                    card.innerHTML = `
+                        <div class="card-body">
+                            <div class="worker-name">${t.nombre}</div>
+                            <span class="worker-dni"><i class="far fa-id-card"></i> ${t.dni}</span>
+                            
+                            <div class="worker-info-row" style="margin-top:10px;">
+                                <i class="fas fa-hard-hat"></i> <span>${t.cargo || 'Sin Cargo'}</span>
+                            </div>
+                            <div class="worker-info-row">
+                                <i class="fas fa-building"></i> <span>${t.area || 'General'}</span>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-action btn-docs" onclick="verBoletas('${t.id}')" title="Ver historial de boletas">
+                                <i class="fas fa-file-pdf"></i> Ver Boletas
+                            </button>
+                            <button class="btn-action btn-reset" onclick="resetClave('${t.id}', '${t.nombre}')" title="Restablecer contraseña">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button class="btn-action btn-del" onclick="eliminar('${t.id}', '${t.nombre}')" title="Eliminar trabajador">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (err) { 
+                console.error(err);
+                grid.innerHTML = `<p style="color:red; text-align:center; grid-column:1/-1">Error al cargar: ${err.message}</p>`;
+            }
+        }
+
+        // --- FUNCIONES DE BOTONES ---
+        function verBoletas(id) {
+            window.location.href = `admin-boletas-trabajador.html?userId=${id}`;
+        }
+
+        async function resetClave(id, nombre) {
+            const r = await Swal.fire({
+                title: '¿Restablecer contraseña?',
+                html: `La clave de <b>${nombre}</b> volverá a ser: <br><br><code>minera2025</code>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e67e22',
+                cancelButtonColor: '#7f8c8d',
+                confirmButtonText: 'Sí, restablecer'
+            });
+
+            if(r.isConfirmed) {
+                const { error } = await supabase.from('trabajadores').update({password: 'minera2025'}).eq('id', id);
+                if(error) Swal.fire('Error', error.message, 'error');
+                else Swal.fire('¡Listo!', 'Contraseña restablecida exitosamente.', 'success');
+            }
+        }
+
+        async function eliminar(id, nombre) {
+            const r = await Swal.fire({
+                title: '¿Eliminar trabajador?',
+                text: `Se eliminará a ${nombre} y todo su historial.`,
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#7f8c8d',
+                confirmButtonText: 'Sí, eliminar definitivamente'
+            });
+
+            if(r.isConfirmed) {
+                await supabase.from('boletas').delete().eq('trabajador_id', id);
+                const { error } = await supabase.from('trabajadores').delete().eq('id', id);
+                
+                if(error) Swal.fire('Error', error.message, 'error');
+                else {
+                    Swal.fire('Eliminado', 'Trabajador eliminado del sistema.', 'success');
+                    cargarTrabajadores();
+                }
+            }
+        }
+
+        // --- FUNCIÓN GUARDAR (CORREGIDA) ---
+        async function guardarTrabajador(e) {
+            e.preventDefault();
+            const dni = document.getElementById('dni').value.trim();
+            const nombre = document.getElementById('nombre').value.trim().toUpperCase();
+            const cargo = document.getElementById('cargo').value.trim().toUpperCase();
+            
+            // 1. CAPTURAR EL ÁREA DEL NUEVO SELECT
+            const area = document.getElementById('area').value;
+            
+            try {
+                // Verificar DNI duplicado
+                const { data: existe } = await supabase.from('trabajadores').select('id').eq('dni', dni);
+                if(existe && existe.length > 0) throw new Error("Este DNI ya está registrado.");
+
+                // 2. ENVIAR EL ÁREA A SUPABASE
+                const { error } = await supabase.from('trabajadores').insert([{
+                    dni, 
+                    nombre, 
+                    cargo, 
+                    area, // <-- Aquí enviamos el dato que faltaba
+                    password: 'minera2025', 
+                    es_admin: false
+                }]);
+
+                if(error) throw error;
+                
+                Swal.fire({ title: '¡Creado!', text: 'Trabajador agregado correctamente.', icon: 'success', timer: 1500, showConfirmButton: false });
+                cerrarModal();
+                cargarTrabajadores();
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            }
+        }
+
+        // --- UTILIDADES ---
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+        function abrirModal() { 
+            document.getElementById('modalTrabajador').classList.add('active'); 
+            document.querySelector('form').reset();
+        }
+        function cerrarModal() { document.getElementById('modalTrabajador').classList.remove('active'); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Perfil</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #ecf0f1; display: flex; min-height: 100vh; margin:0; }
+        .sidebar { width: 260px; background: #2c3e50; padding: 20px 0; flex-shrink: 0; display: flex; flex-direction: column; }
+        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 15px 25px; color: white; text-decoration: none; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); border-left: 4px solid #e74c3c; }
+        
+        .main { flex: 1; padding: 40px; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); height: fit-content; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { width: 100%; padding: 15px; background: #3498db; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">💎 SMART BOLETA</div>
+        <a href="dashboard.html" class="nav-link">🏠 Inicio</a>
+        <a href="boletas.html" class="nav-link">📄 Mis Boletas</a>
+        <a href="perfil.html" class="nav-link active">👤 Mi Perfil</a>
+        <a href="javascript:void(0)" onclick="cerrarSesion()" class="nav-link" style="margin-top:auto; color:#e74c3c">🚪 Salir</a>
+    </nav>
+
+    <main class="main">
+        <div class="card">
+            <h2 style="text-align: center; color: #2c3e50;">👤 Mis Datos</h2>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 5px 0;"><strong>Nombre:</strong> <span id="name">...</span></p>
+                <p style="margin: 5px 0;"><strong>DNI:</strong> <span id="dni">...</span></p>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <h3 style="color: #2c3e50;">🔐 Cambiar Contraseña</h3>
+            <input type="password" id="p1" placeholder="Nueva contraseña">
+            <input type="password" id="p2" placeholder="Confirmar contraseña">
+            <button onclick="save()">Guardar Cambios</button>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let user = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- SEGURIDAD ---
+            try { user = JSON.parse(localStorage.getItem('usuarioLogueado')); } catch(e) {}
+            
+            if(!user) {
+                document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif"><h2>🔒 Sesión Requerida</h2><br><a href="index.html" style="padding:10px 20px;background:#2c3e50;color:white;text-decoration:none;border-radius:5px">Ir al Login</a></div>`;
+                return;
+            }
+
+            document.getElementById('name').textContent = user.nombre;
+            document.getElementById('dni').textContent = user.dni;
+        });
+
+        async function save() {
+            const p1 = document.getElementById('p1').value;
+            const p2 = document.getElementById('p2').value;
+            if(p1.length < 6) return Swal.fire('Error', 'Mínimo 6 caracteres', 'error');
+            if(p1 !== p2) return Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
+            
+            const { error } = await supabase.from('trabajadores').update({password: p1}).eq('id', user.id);
+            if(!error) {
+                Swal.fire('Listo', 'Contraseña actualizada. Inicia sesión nuevamente.', 'success')
+                .then(() => { cerrarSesion(); });
+            } else {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

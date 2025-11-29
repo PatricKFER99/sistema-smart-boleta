@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #ecf0f1; display: flex; min-height: 100vh; margin: 0; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: #2c3e50; padding: 20px 0; flex-shrink: 0; display: flex; flex-direction: column; }
+        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; }
+        .nav-link { display: block; color: white; padding: 15px 25px; text-decoration: none; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); border-left: 4px solid #e67e22; }
+        .btn-logout { margin-top: auto; padding: 15px 25px; color: #e74c3c; text-decoration: none; font-weight: bold; cursor: pointer; }
+
+        /* MAIN */
+        .main { flex: 1; padding: 40px; display: flex; justify-content: center; align-items: flex-start; }
+        
+        .card { background: white; padding: 40px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 20px; }
+        
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        .admin-label { text-align: center; color: #7f8c8d; font-weight: bold; margin-bottom: 30px; display: block; }
+        
+        label { font-weight: bold; color: #555; display: block; margin-bottom: 5px; margin-top: 15px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        input:focus { border-color: #e67e22; }
+        
+        .btn-save { width: 100%; padding: 15px; background: #e67e22; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 25px; transition: 0.3s; }
+        .btn-save:hover { background: #d35400; }
+    </style>
+</head>
+<body>
+    <!-- CONTENIDO (Se oculta si no hay sesión) -->
+    <div id="appContent" style="display:flex; width:100%;">
+        <nav class="sidebar">
+            <div class="sidebar-header">ADMIN PANEL</div>
+            <a href="admin-panel.html" class="nav-link">👥 Trabajadores</a>
+            <a href="subir-boletas.html" class="nav-link">📤 Subir Boletas</a>
+            <a href="admin-perfil.html" class="nav-link active">👤 Mi Perfil Admin</a>
+            <a href="javascript:void(0)" onclick="cerrarSesion()" class="btn-logout">🚪 Salir</a>
+        </nav>
+
+        <main class="main">
+            <div class="card">
+                <h2>🔐 Seguridad Admin</h2>
+                <span id="adminName" class="admin-label">Cargando...</span>
+                <hr style="border: 0; border-top: 1px solid #eee;">
+                
+                <label>Nueva Contraseña</label>
+                <input type="password" id="pass1" placeholder="Mínimo 6 caracteres">
+                
+                <label>Confirmar Contraseña</label>
+                <input type="password" id="pass2" placeholder="Repite la contraseña">
+                
+                <button class="btn-save" onclick="cambiar()">Actualizar Contraseña</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let admin = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- SEGURIDAD BLINDADA ---
+            try { admin = JSON.parse(localStorage.getItem('usuarioLogueado')); } catch(e) {}
+
+            if (!admin || !admin.es_admin) {
+                document.body.innerHTML = `
+                    <div style="display:flex;justify-content:center;align-items:center;height:100vh;width:100%;flex-direction:column;font-family:sans-serif;background:#ecf0f1">
+                        <h2 style="color:#2c3e50">🔒 Acceso Restringido</h2>
+                        <br>
+                        <a href="index.html" style="padding:12px 24px;background:#2c3e50;color:white;text-decoration:none;border-radius:5px;font-weight:bold">Ir al Login</a>
+                    </div>`;
+                return;
+            }
+            
+            document.getElementById('adminName').textContent = admin.nombre;
+        });
+
+        async function cambiar() {
+            const p1 = document.getElementById('pass1').value;
+            const p2 = document.getElementById('pass2').value;
+            if(p1.length < 6) return Swal.fire('Error', 'Mínimo 6 caracteres', 'error');
+            if(p1 !== p2) return Swal.fire('Error', 'No coinciden', 'error');
+
+            // Actualizar en tabla trabajadores (donde unificamos todo)
+            const { error } = await supabase.from('trabajadores').update({password: p1}).eq('id', admin.id);
+            
+            if(!error) {
+                Swal.fire('Listo', 'Contraseña cambiada. Inicia sesión de nuevo.', 'success')
+                .then(() => { cerrarSesion(); });
+            } else {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            // Recarga segura para evitar error de redirección
+            location.reload(); 
+        }
+    </script>
+</body>
+</html>
