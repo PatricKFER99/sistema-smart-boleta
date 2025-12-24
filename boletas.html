@@ -45,7 +45,9 @@
     <script>
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // --- CAMBIO PARA EVITAR ERRORES: Usamos clienteBoletas ---
+        const clienteBoletas = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         document.addEventListener('DOMContentLoaded', async () => {
             let u = null;
@@ -66,8 +68,8 @@
                 return;
             }
 
-            // --- 2. CARGAR DATOS ---
-            const { data } = await supabase.from('boletas')
+            // --- 2. CARGAR DATOS (Usando clienteBoletas) ---
+            const { data } = await clienteBoletas.from('boletas')
                 .select('mes, año, nombre_archivo, url_archivo, fecha_subida')
                 .eq('dni', u.dni)
                 .order('año', {ascending:false})
