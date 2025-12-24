@@ -21,7 +21,6 @@
     </style>
 </head>
 <body>
-    <!-- CONTENIDO (Se oculta si no hay sesión) -->
     <div id="appContent" style="display:flex; width:100%;">
         <nav class="sidebar">
             <div class="sidebar-header">💎 SMART BOLETA</div>
@@ -56,7 +55,9 @@
     <script>
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // --- CAMBIO PARA EVITAR ERRORES: Usamos clienteDashboard ---
+        const clienteDashboard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // LÓGICA SEGURA (Sin redirección automática)
         let user = null;
@@ -83,7 +84,8 @@
         }
 
         async function load() {
-            const { data } = await supabase.from('boletas')
+            // Usamos clienteDashboard aquí
+            const { data } = await clienteDashboard.from('boletas')
                 .select('mes, año, fecha_subida')
                 .eq('dni', user.dni)
                 .order('fecha_subida', {ascending: true}); // Orden ascendente
