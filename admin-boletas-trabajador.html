@@ -7,94 +7,69 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { 
-            --sidebar-bg: #2c3e50; 
-            --orange: #e67e22; 
-            --blue: #3498db; 
-            --red: #e74c3c; 
-            --green: #27ae60;
-            --bg-gray: #ecf0f1;
-        }
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --light: #ecf0f1; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg-gray); display: flex; min-height: 100vh; }
+        body { background: var(--light); display: flex; min-height: 100vh; }
 
-        .sidebar { width: 260px; background: var(--sidebar-bg); color: white; padding: 20px 0; display: flex; flex-direction: column; position: fixed; height: 100%; }
-        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        /* SIDEBAR (Igual al admin panel) */
+        .sidebar { width: 260px; background: var(--primary); color: white; padding: 20px 0; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 15px 25px; color: #bdc3c7; text-decoration: none; transition: 0.3s; }
+        .nav-link:hover { background: rgba(255,255,255,0.1); color: white; }
+        .btn-logout { margin-top: auto; padding: 15px 25px; color: var(--danger); text-decoration: none; font-weight: bold; cursor: pointer; }
+
+        /* MAIN */
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
         
-        .nav-links { list-style: none; margin-top: 10px; }
-        .nav-link a { display: flex; align-items: center; gap: 10px; padding: 15px 25px; color: #bdc3c7; text-decoration: none; transition: 0.3s; border-left: 4px solid transparent; }
-        .nav-link a:hover, .nav-link a.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--orange); }
-        .nav-link i { width: 25px; text-align: center; }
+        .header-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-left: 5px solid var(--accent); }
+        .btn-back { background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+        .btn-back:hover { background: #7f8c8d; }
 
-        .sidebar-footer { margin-top: auto; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .btn-logout { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: bold; padding: 10px; border-radius: 5px; transition: 0.3s; cursor: pointer; }
-        .btn-logout:hover { background: rgba(231, 76, 60, 0.1); }
-
-        .main { margin-left: 260px; flex: 1; padding: 30px; }
-
-        .profile-header { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-left: 5px solid var(--blue); }
-        .user-info h2 { color: var(--sidebar-bg); margin: 0 0 5px 0; font-size: 1.5rem; text-transform: uppercase; }
-        .user-details span { background: #f0f2f5; padding: 4px 10px; border-radius: 4px; font-size: 0.9rem; color: #666; font-weight: bold; margin-right: 10px; }
-        
-        .btn-back { background: #95a5a6; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .btn-back:hover { background: #7f8c8d; transform: translateY(-2px); }
-
-        .docs-card { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
+        /* TABLA */
+        .table-container { background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
+        .table-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 15px 20px; text-align: left; color: var(--sidebar-bg); font-weight: bold; border-bottom: 2px solid #eee; }
-        td { padding: 15px 20px; border-bottom: 1px solid #eee; color: #555; vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #fcfcfc; }
-
-        .badge-date { background: #e8f4fd; color: var(--blue); padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; }
+        th, td { padding: 15px 20px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: var(--primary); font-weight: bold; text-transform: uppercase; font-size: 0.85rem; }
+        tr:hover { background: #f1f2f6; }
         
-        .action-btn { border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; transition: 0.2s; margin-right: 5px; }
-        .btn-download { background: #eafaf1; color: var(--green); }
-        .btn-download:hover { background: var(--green); color: white; }
-        .btn-delete-doc { background: #fdeaea; color: var(--red); }
-        .btn-delete-doc:hover { background: var(--red); color: white; }
+        .btn-download { background: var(--success); color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.9rem; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-download:hover { background: #219150; }
+        
+        .btn-delete { background: var(--danger); color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px; }
+        .btn-delete:hover { background: #c0392b; }
+
         .empty-state { padding: 40px; text-align: center; color: #7f8c8d; }
     </style>
 </head>
 <body>
 
     <nav class="sidebar">
-        <div class="sidebar-header">
-            <i class="fas fa-shield-alt"></i> ADMIN PANEL
-        </div>
-        <ul class="nav-links">
-            <li class="nav-link"><a href="admin-panel.html"><i class="fas fa-users"></i> Trabajadores</a></li>
-            <li class="nav-link"><a href="subir-boletas.html"><i class="fas fa-file-upload"></i> Subir Boletas</a></li>
-            <li class="nav-link"><a href="admin-perfil.html"><i class="fas fa-user-cog"></i> Mi Perfil Admin</a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <a href="javascript:void(0)" class="btn-logout" onclick="cerrarSesion()">
-                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-            </a>
-        </div>
+        <div class="sidebar-header"><i class="fas fa-shield-alt"></i> ADMIN PANEL</div>
+        <a href="admin-panel.html" class="nav-link"><i class="fas fa-users"></i> Trabajadores</a>
+        <a href="subir-boletas.html" class="nav-link"><i class="fas fa-file-upload"></i> Subir Boletas</a>
+        <a href="admin-perfil.html" class="nav-link"><i class="fas fa-user-cog"></i> Mi Perfil Admin</a>
+        <a href="javascript:void(0)" class="btn-logout" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Salir</a>
     </nav>
 
     <main class="main">
-        <div class="profile-header">
-            <div class="user-info">
-                <h2 id="userName">Cargando...</h2>
-                <div class="user-details">
-                    <span id="userDni"><i class="far fa-id-card"></i> ...</span>
-                    <span id="userCargo"><i class="fas fa-hard-hat"></i> ...</span>
-                </div>
+        <div class="header-card">
+            <div>
+                <h2 id="workerName" style="color: var(--primary); margin: 0;">Cargando trabajador...</h2>
+                <p id="workerDni" style="color: #7f8c8d; font-size: 0.9rem; margin-top: 5px;">...</p>
             </div>
             <a href="admin-panel.html" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Volver
             </a>
         </div>
 
-        <div class="docs-card">
-            <div style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin:0; color:var(--sidebar-bg);">📂 Historial de Documentos</h3>
-                <small style="color:#7f8c8d">Archivos disponibles para descargar</small>
+        <div class="table-container">
+            <div class="table-header">
+                <i class="fas fa-folder-open" style="color: #f39c12;"></i>
+                <h3 style="margin:0; color: var(--primary);">Historial de Documentos</h3>
             </div>
             
-            <table>
+            <table id="boletasTable">
                 <thead>
                     <tr>
                         <th>Periodo</th>
@@ -103,8 +78,8 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="boletasList">
-                    <tr><td colspan="4" style="text-align:center; padding: 2rem;">Cargando documentos...</td></tr>
+                <tbody id="boletasBody">
+                    <tr><td colspan="4" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Buscando documentos...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -114,91 +89,106 @@
     <script>
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // --- CAMBIO CLAVE: Nombre único para evitar el error ---
+        const clienteDetalle = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('userId');
+        // Obtener ID del trabajador de la URL (ej: ?userId=123)
+        const params = new URLSearchParams(window.location.search);
+        const trabajadorId = params.get('userId');
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // --- 1. SEGURIDAD ADMIN BLINDADA ---
+            // 1. Verificar Sesión Admin
             let admin = null;
             try { admin = JSON.parse(localStorage.getItem('usuarioLogueado')); } catch(e) {}
+            if(!admin || !admin.es_admin) { window.location.href = 'index.html'; return; }
 
-            if (!admin || !admin.es_admin) {
-                document.body.innerHTML = `
-                    <div style="display:flex;justify-content:center;align-items:center;height:100vh;width:100%;flex-direction:column;font-family:sans-serif;background:#ecf0f1">
-                        <h2 style="color:#2c3e50">🔒 Acceso Restringido</h2>
-                        <br>
-                        <a href="index.html" style="padding:12px 24px;background:#3498db;color:white;text-decoration:none;border-radius:5px;font-weight:bold">Ir al Login</a>
-                    </div>`;
+            if(!trabajadorId) {
+                Swal.fire('Error', 'No se especificó un trabajador', 'error').then(() => window.location.href='admin-panel.html');
                 return;
             }
 
-            // --- 2. VALIDAR URL ---
-            if(!userId) {
-                alert("No se especificó un trabajador.");
-                window.location.href = 'admin-panel.html';
-                return;
-            }
-
-            await cargarInfoUsuario();
+            // 2. Cargar Info del Trabajador
+            await cargarInfoTrabajador();
+            
+            // 3. Cargar Boletas
             await cargarBoletas();
         });
 
-        async function cargarInfoUsuario() {
-            const { data, error } = await supabase.from('trabajadores').select('*').eq('id', userId).single();
+        async function cargarInfoTrabajador() {
+            // Usamos clienteDetalle
+            const { data, error } = await clienteDetalle.from('trabajadores').select('nombre, dni').eq('id', trabajadorId).single();
             if(data) {
-                document.getElementById('userName').textContent = data.nombre;
-                document.getElementById('userDni').innerHTML = `<i class="far fa-id-card"></i> ${data.dni}`;
-                document.getElementById('userCargo').innerHTML = `<i class="fas fa-hard-hat"></i> ${data.cargo || 'Sin Cargo'}`;
+                document.getElementById('workerName').textContent = data.nombre;
+                document.getElementById('workerDni').textContent = `DNI: ${data.dni}`;
             } else {
-                document.getElementById('userName').textContent = "Usuario no encontrado";
+                document.getElementById('workerName').textContent = "Trabajador no encontrado";
             }
         }
 
         async function cargarBoletas() {
-            const tbody = document.getElementById('boletasList');
-            const { data, error } = await supabase
-                .from('boletas')
-                .select('id, mes, año, nombre_archivo, url_archivo, fecha_subida')
-                .eq('trabajador_id', userId)
-                .order('año', { ascending: false })
-                .order('fecha_subida', { ascending: false });
+            const tbody = document.getElementById('boletasBody');
+            
+            // Usamos clienteDetalle
+            const { data, error } = await clienteDetalle.from('boletas')
+                .select('*')
+                .eq('trabajador_id', trabajadorId)
+                .order('año', {ascending: false})
+                .order('fecha_subida', {ascending: false});
 
             tbody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><i class="fas fa-folder-open fa-2x" style="margin-bottom:10px"></i><br>Este trabajador no tiene boletas cargadas aún.</td></tr>`;
+
+            if(!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">📂 Este trabajador no tiene boletas registradas.</td></tr>`;
                 return;
             }
 
             data.forEach(b => {
-                const tr = document.createElement('tr');
                 const fecha = new Date(b.fecha_subida).toLocaleDateString();
-                tr.innerHTML = `
-                    <td><span class="badge-date">${b.mes} ${b.año}</span></td>
-                    <td><i class="fas fa-file-pdf" style="color:#e74c3c; margin-right:5px;"></i> ${b.nombre_archivo}</td>
-                    <td style="color: #7f8c8d;">${fecha}</td>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-weight:bold; color:var(--primary)">${b.mes} ${b.año}</td>
+                    <td>${b.nombre_archivo}</td>
+                    <td>${fecha}</td>
                     <td>
-                        <button class="action-btn btn-download" onclick="window.open('${b.url_archivo}', '_blank')" title="Ver"><i class="fas fa-download"></i></button>
-                        <button class="action-btn btn-delete-doc" onclick="eliminarBoleta('${b.id}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
-                    </td>`;
-                tbody.appendChild(tr);
+                        <a href="${b.url_archivo}" target="_blank" class="btn-download" title="Ver Documento">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        <button onclick="borrarBoleta('${b.id}')" class="btn-delete" title="Eliminar Boleta">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
             });
         }
 
-        async function eliminarBoleta(id) {
-            const confirm = await Swal.fire({ title: '¿Eliminar boleta?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, borrar' });
-            if (confirm.isConfirmed) {
-                await supabase.from('boletas').delete().eq('id', id);
-                Swal.fire({ title: 'Eliminado', icon: 'success', timer: 1000, showConfirmButton: false });
-                cargarBoletas();
+        async function borrarBoleta(idBoleta) {
+            const result = await Swal.fire({
+                title: '¿Eliminar documento?',
+                text: "Esta acción no se puede deshacer",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#95a5a6',
+                confirmButtonText: 'Sí, eliminar'
+            });
+
+            if(result.isConfirmed) {
+                // Usamos clienteDetalle
+                const { error } = await clienteDetalle.from('boletas').delete().eq('id', idBoleta);
+                if(error) {
+                    Swal.fire('Error', error.message, 'error');
+                } else {
+                    Swal.fire('Eliminado', 'El documento ha sido borrado.', 'success');
+                    cargarBoletas(); // Recargar tabla
+                }
             }
         }
 
         function cerrarSesion() {
             localStorage.clear();
-            // Recarga segura para evitar error de redirección
-            location.reload();
+            window.location.href = 'index.html';
         }
     </script>
 </body>
