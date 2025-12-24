@@ -47,7 +47,9 @@
     <script>
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // --- CAMBIO PARA EVITAR ERRORES: Usamos clienteUsuarioPerfil ---
+        const clienteUsuarioPerfil = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let user = null;
 
@@ -70,7 +72,8 @@
             if(p1.length < 6) return Swal.fire('Error', 'Mínimo 6 caracteres', 'error');
             if(p1 !== p2) return Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
             
-            const { error } = await supabase.from('trabajadores').update({password: p1}).eq('id', user.id);
+            // Usamos clienteUsuarioPerfil aquí
+            const { error } = await clienteUsuarioPerfil.from('trabajadores').update({password: p1}).eq('id', user.id);
             if(!error) {
                 Swal.fire('Listo', 'Contraseña actualizada. Inicia sesión nuevamente.', 'success')
                 .then(() => { cerrarSesion(); });
