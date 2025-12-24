@@ -9,16 +9,16 @@
 ---
 
 ## 🔗 Enlaces Rápidos
-| 🚀 Ver Proyecto en Vivo | 📄 Documentación Técnica |
+|  Ver Proyecto en Vivo | 📄 Documentación Técnica |
 |-------------------------|--------------------------|
-| [**Abrir Aplicación Web**](https://sistema-boletas-minera-dcv.netlify.app/) | [**Leer Informe Técnico**](./INFORME_TÉCNICO.pdf) |
+| [**Abrir Aplicación Web**](https://sistema-boletas-minera-dcv.netlify.app/) | [**Leer Informe Técnico**](./INFORME_TECNICO.pdf) |
 
 ---
 
-## 💡 Sobre el Proyecto
+##  Sobre el Proyecto
 Este sistema fue desarrollado para solucionar la entrega manual de documentos, permitiendo una gestión digitalizada y segura. Utiliza una arquitectura **Serverless** conectando un frontend robusto con **Supabase** para la persistencia de datos y almacenamiento de archivos.
 
-### ✨ Funcionalidades Principales
+##  Funcionalidades Principales
 * **🔐 Seguridad Avanzada:** Autenticación por roles (Administrador vs. Trabajador) con protección de rutas.
 * **📂 Carga Inteligente (Drag & Drop):** El sistema detecta automáticamente el *Mes* y *Año* del nombre del archivo PDF al arrastrarlo.
 * **☁️ Almacenamiento en Nube:** Gestión de documentos PDF escalable mediante Supabase Storage.
@@ -38,7 +38,7 @@ Este proyecto implementa prácticas modernas de desarrollo y despliegue:
 
 ---
 
-## 👨‍💻 Autor
+##  Autor
 **Patrick Fernando Lopez Meza**
 * Desarrollador de Software & Especialista en Soporte TI.
 * [LinkedIn](https://www.linkedin.com/in/patrick-fernando-l%C3%B3pez-meza-0538102b1/) 
