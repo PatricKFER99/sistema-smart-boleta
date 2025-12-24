@@ -166,16 +166,19 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
+        // --- CONEXIÓN SEGURA (Nombre único: clienteAdmin) ---
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Usamos clienteAdmin para evitar conflictos
+        const clienteAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- AUTENTICACIÓN SEGURA ---
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuarioLogueado'));
-                // Validar si existe y si tiene la propiedad es_admin (o si usas otra lógica para admins)
                 if(!usuario || usuario.es_admin !== true) { 
                     throw new Error("No autorizado"); 
                 }
@@ -193,13 +196,12 @@
         async function cargarTrabajadores() {
             const grid = document.getElementById('listaTrabajadores');
             try {
-                // Traemos todos los usuarios ordenados por nombre
-                const { data, error } = await supabase.from('trabajadores').select('*').order('nombre');
+                // Usamos clienteAdmin aquí
+                const { data, error } = await clienteAdmin.from('trabajadores').select('*').order('nombre');
                 
                 if (error) throw error;
                 
                 grid.innerHTML = '';
-                // Filtramos para NO mostrar a los administradores en la lista
                 const trabajadores = data.filter(t => t.es_admin !== true);
 
                 if(trabajadores.length === 0) {
@@ -264,7 +266,7 @@
             });
 
             if(r.isConfirmed) {
-                const { error } = await supabase.from('trabajadores').update({password: 'minera2025'}).eq('id', id);
+                const { error } = await clienteAdmin.from('trabajadores').update({password: 'minera2025'}).eq('id', id);
                 if(error) Swal.fire('Error', error.message, 'error');
                 else Swal.fire('¡Listo!', 'Contraseña restablecida exitosamente.', 'success');
             }
@@ -282,8 +284,8 @@
             });
 
             if(r.isConfirmed) {
-                await supabase.from('boletas').delete().eq('trabajador_id', id);
-                const { error } = await supabase.from('trabajadores').delete().eq('id', id);
+                await clienteAdmin.from('boletas').delete().eq('trabajador_id', id);
+                const { error } = await clienteAdmin.from('trabajadores').delete().eq('id', id);
                 
                 if(error) Swal.fire('Error', error.message, 'error');
                 else {
@@ -293,27 +295,25 @@
             }
         }
 
-        // --- FUNCIÓN GUARDAR (CORREGIDA) ---
+        // --- FUNCIÓN GUARDAR ---
         async function guardarTrabajador(e) {
             e.preventDefault();
             const dni = document.getElementById('dni').value.trim();
             const nombre = document.getElementById('nombre').value.trim().toUpperCase();
             const cargo = document.getElementById('cargo').value.trim().toUpperCase();
-            
-            // 1. CAPTURAR EL ÁREA DEL NUEVO SELECT
             const area = document.getElementById('area').value;
             
             try {
                 // Verificar DNI duplicado
-                const { data: existe } = await supabase.from('trabajadores').select('id').eq('dni', dni);
+                const { data: existe } = await clienteAdmin.from('trabajadores').select('id').eq('dni', dni);
                 if(existe && existe.length > 0) throw new Error("Este DNI ya está registrado.");
 
-                // 2. ENVIAR EL ÁREA A SUPABASE
-                const { error } = await supabase.from('trabajadores').insert([{
+                // Guardar
+                const { error } = await clienteAdmin.from('trabajadores').insert([{
                     dni, 
                     nombre, 
                     cargo, 
-                    area, // <-- Aquí enviamos el dato que faltaba
+                    area, 
                     password: 'minera2025', 
                     es_admin: false
                 }]);
