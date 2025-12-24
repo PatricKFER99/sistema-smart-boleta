@@ -44,7 +44,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
+        // --- CONEXIÓN A SUPABASE (SOLO UNA VEZ) ---
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -67,9 +69,7 @@
                     return;
                 }
 
-                // 2. Buscar en ADMINISTRADORES (o trabajadores con rol admin)
-                // Nota: En tu sistema unificamos todo en 'trabajadores' con un campo 'es_admin', 
-                // pero por si acaso dejaste la tabla 'administradores', buscamos ahí también.
+                // 2. Buscar en ADMINISTRADORES (Backup)
                 let { data: admin } = await supabase.from('administradores').select('*').eq('dni', dni).eq('password', password).single();
 
                 if (admin) {
@@ -77,7 +77,7 @@
                     return;
                 }
 
-                // Si llegamos aquí, falló
+                // Si no encuentra nada
                 Swal.fire('Error', 'Usuario o contraseña incorrectos', 'error');
                 btn.disabled = false;
                 btn.textContent = "INGRESAR";
@@ -92,19 +92,15 @@
 
         function accesoExitoso(usuario, esAdminTabla) {
             // Guardar sesión
-            // Si viene de tabla administradores o tiene el flag es_admin
             if(esAdminTabla) usuario.es_admin = true; 
-            
             localStorage.setItem('usuarioLogueado', JSON.stringify(usuario));
             
             const destino = (usuario.es_admin) ? 'admin-panel.html' : 'dashboard.html';
 
-            // INTENTO DE REDIRECCIÓN SUAVE
+            // Redirección
             try {
-                // Opción 1: Redirección automática
                 window.location.href = destino;
             } catch (err) {
-                // Opción 2: Si falla (tu error actual), mostramos botón manual
                 mostrarBotonManual(destino);
             }
         }
