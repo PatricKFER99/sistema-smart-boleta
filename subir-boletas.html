@@ -69,13 +69,15 @@
     <script>
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // --- CAMBIO CLAVE: Usamos 'clienteSubida' para evitar errores ---
+        const clienteSubida = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let archivosParaSubir = [];
         let trabajadores = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // --- 1. SEGURIDAD ADMIN (Obligatorio) ---
+            // --- 1. SEGURIDAD ADMIN ---
             let admin = null;
             try { admin = JSON.parse(localStorage.getItem('usuarioLogueado')); } catch(e) {}
 
@@ -84,8 +86,8 @@
                 return;
             }
 
-            // --- 2. CARGA DE TRABAJADORES ---
-            const { data } = await supabase.from('trabajadores').select('id, nombre, dni').eq('es_admin', false);
+            // --- 2. CARGA DE TRABAJADORES (Usando clienteSubida) ---
+            const { data } = await clienteSubida.from('trabajadores').select('id, nombre, dni').eq('es_admin', false);
             trabajadores = data || [];
         });
 
@@ -174,12 +176,13 @@
                     const trab = trabajadores.find(t => t.id == tId);
                     const ruta = `boletas/${anio}/${mes}/${trab.dni}_${Date.now()}.pdf`;
 
-                    const { error: upError } = await supabase.storage.from('boletas2').upload(ruta, item.file);
+                    // --- USAMOS clienteSubida AQUÍ ---
+                    const { error: upError } = await clienteSubida.storage.from('boletas2').upload(ruta, item.file);
                     if (upError) throw upError;
 
-                    const { data: urlData } = supabase.storage.from('boletas2').getPublicUrl(ruta);
+                    const { data: urlData } = clienteSubida.storage.from('boletas2').getPublicUrl(ruta);
 
-                    const { error: dbError } = await supabase.from('boletas').insert([{
+                    const { error: dbError } = await clienteSubida.from('boletas').insert([{
                         trabajador_id: tId, dni: trab.dni, nombre_trabajador: trab.nombre,
                         mes: mes, año: anio, nombre_archivo: item.file.name,
                         url_archivo: urlData.publicUrl, fecha_subida: new Date().toISOString()
