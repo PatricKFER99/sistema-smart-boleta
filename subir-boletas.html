@@ -70,7 +70,7 @@
         const SUPABASE_URL = 'https://ezgswcgsgxwskofhcorc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Z3N3Y2dzZ3h3c2tvZmhjb3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzMwMTEsImV4cCI6MjA3OTM0OTAxMX0.qQM7va7uKQkMaGw0LLnYujNh3U2YsxF0THlRhv1_sXk';
         
-        // --- CAMBIO CLAVE: Usamos 'clienteSubida' para evitar errores ---
+        // --- CLIENTE SUPABASE ---
         const clienteSubida = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let archivosParaSubir = [];
@@ -86,7 +86,7 @@
                 return;
             }
 
-            // --- 2. CARGA DE TRABAJADORES (Usando clienteSubida) ---
+            // --- 2. CARGA DE TRABAJADORES ---
             const { data } = await clienteSubida.from('trabajadores').select('id, nombre, dni').eq('es_admin', false);
             trabajadores = data || [];
         });
@@ -129,6 +129,18 @@
                 const idUnico = Date.now() + index;
                 archivosParaSubir.push({ id: idUnico, file, trabajadorId, mes: mesDetectado, anio: anioDetectado });
 
+                // --- NUEVA LÓGICA DINÁMICA DE AÑOS ---
+                const anioActualSistema = new Date().getFullYear();
+                const anioFinal = anioActualSistema + 2; 
+                let opcionesAnioHTML = '';
+                
+                // Generamos opciones desde el inicio del proyecto (2024) hasta el futuro (Año actual + 2)
+                for (let y = 2024; y <= anioFinal; y++) {
+                    const seleccionado = (anioDetectado == y) ? 'selected' : '';
+                    opcionesAnioHTML += `<option value="${y}" ${seleccionado}>${y}</option>`;
+                }
+                // ----------------------------------------
+
                 // Renderizar
                 const item = document.createElement('div');
                 item.className = 'file-card';
@@ -145,10 +157,11 @@
                             <select id="mes-${idUnico}">
                                 ${meses.map(m => `<option value="${m}" ${m === mesDetectado ? 'selected' : ''}>${m}</option>`).join('')}
                             </select>
+                            
                             <select id="anio-${idUnico}">
-                                <option value="2024" ${anioDetectado == 2024 ? 'selected' : ''}>2024</option>
-                                <option value="2025" ${anioDetectado == 2025 ? 'selected' : ''}>2025</option>
+                                ${opcionesAnioHTML}
                             </select>
+                            
                         </div>
                     </div>
                     <div class="status" id="status-${idUnico}" style="color:#f39c12">Pendiente</div>
@@ -176,7 +189,6 @@
                     const trab = trabajadores.find(t => t.id == tId);
                     const ruta = `boletas/${anio}/${mes}/${trab.dni}_${Date.now()}.pdf`;
 
-                    // --- USAMOS clienteSubida AQUÍ ---
                     const { error: upError } = await clienteSubida.storage.from('boletas2').upload(ruta, item.file);
                     if (upError) throw upError;
 
